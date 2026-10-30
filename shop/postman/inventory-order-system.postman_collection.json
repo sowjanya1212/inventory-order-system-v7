@@ -1,0 +1,1287 @@
+{
+ "info": {
+  "name": "Inventory & Order Management",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "variable": [
+  {
+   "key": "baseUrl",
+   "value": "http://localhost:8000"
+  }
+ ],
+ "item": [
+  {
+   "name": "1 Register customer",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 201', () => pm.response.to.have.status(201));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/auth/register",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "auth",
+      "register"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"email\": \"{{email}}\", \"password\": \"secret1\"}"
+    }
+   }
+  },
+  {
+   "name": "2 Register duplicate email (FAIL 409)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 409', () => pm.response.to.have.status(409));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/auth/register",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "auth",
+      "register"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"email\": \"{{email}}\", \"password\": \"secret1\"}"
+    }
+   }
+  },
+  {
+   "name": "3 Login wrong password (FAIL 401)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 401', () => pm.response.to.have.status(401));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/auth/login",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "auth",
+      "login"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"email\": \"{{email}}\", \"password\": \"wrong11\"}"
+    }
+   }
+  },
+  {
+   "name": "4 Login customer",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));pm.collectionVariables.set('token', pm.response.json().access_token);"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/auth/login",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "auth",
+      "login"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"email\": \"{{email}}\", \"password\": \"secret1\"}"
+    }
+   }
+  },
+  {
+   "name": "5 Login admin",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));pm.collectionVariables.set('adminToken', pm.response.json().access_token);"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/auth/login",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "auth",
+      "login"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"email\": \"admin@example.com\", \"password\": \"Admin@123\"}"
+    }
+   }
+  },
+  {
+   "name": "6 Me",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/auth/me",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "auth",
+      "me"
+     ]
+    }
+   }
+  },
+  {
+   "name": "7 List products",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/products",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "products"
+     ]
+    }
+   }
+  },
+  {
+   "name": "8 Create product as customer (FAIL 403)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 403', () => pm.response.to.have.status(403));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/products",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "products"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"name\": \"x\", \"category\": \"y\", \"price\": 5}"
+    }
+   }
+  },
+  {
+   "name": "9 Create product as admin",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 201', () => pm.response.to.have.status(201));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{adminToken}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/products",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "products"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"name\": \"Postman Pen\", \"category\": \"Stationery\", \"price\": 10}"
+    }
+   }
+  },
+  {
+   "name": "10 Create product bad price (FAIL 422)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 422', () => pm.response.to.have.status(422));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{adminToken}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/products",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "products"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"name\": \"x\", \"category\": \"y\", \"price\": -1}"
+    }
+   }
+  },
+  {
+   "name": "11 Add to cart",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 201', () => pm.response.to.have.status(201));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/cart/items",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "cart",
+      "items"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"product_id\": 1, \"qty\": 1}"
+    }
+   }
+  },
+  {
+   "name": "12 Add to cart too many (FAIL 409)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 409', () => pm.response.to.have.status(409));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/cart/items",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "cart",
+      "items"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"product_id\": 1, \"qty\": 99}"
+    }
+   }
+  },
+  {
+   "name": "13 View cart",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/cart",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "cart"
+     ]
+    }
+   }
+  },
+  {
+   "name": "14 Add to wishlist",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 201', () => pm.response.to.have.status(201));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/wishlist/items",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "wishlist",
+      "items"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"product_id\": 2}"
+    }
+   }
+  },
+  {
+   "name": "15 Cart without login (FAIL 401)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 401', () => pm.response.to.have.status(401));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/cart",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "cart"
+     ]
+    }
+   }
+  },
+  {
+   "name": "16 Validate coupon",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/coupons/validate",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "coupons",
+      "validate"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"code\": \"WELCOME10\", \"subtotal\": 500}"
+    }
+   }
+  },
+  {
+   "name": "17 Invalid coupon (FAIL 400)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 400', () => pm.response.to.have.status(400));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/coupons/validate",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "coupons",
+      "validate"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"code\": \"NOPE\", \"subtotal\": 500}"
+    }
+   }
+  },
+  {
+   "name": "18 Place order",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 201', () => pm.response.to.have.status(201));pm.collectionVariables.set('orderId', pm.response.json().id);"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     },
+     {
+      "key": "Idempotency-Key",
+      "value": "{{$guid}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/orders",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "orders"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"items\": [{\"product_id\": 1, \"qty\": 1}], \"coupon\": \"WELCOME10\"}"
+    }
+   }
+  },
+  {
+   "name": "19 Pay (success)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 201', () => pm.response.to.have.status(201));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/payments",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "payments"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"order_id\": \"{{orderId}}\", \"simulate\": \"success\"}"
+    }
+   }
+  },
+  {
+   "name": "20 My orders",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/orders/my-orders",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "orders",
+      "my-orders"
+     ]
+    }
+   }
+  },
+  {
+   "name": "21 All orders as customer (FAIL 403)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 403', () => pm.response.to.have.status(403));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/orders",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "orders"
+     ]
+    }
+   }
+  },
+  {
+   "name": "22 Mark Delivered (admin)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "PATCH",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{adminToken}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "orders",
+      "{{orderId}}",
+      "status"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"status\": \"Delivered\"}"
+    }
+   }
+  },
+  {
+   "name": "23 Invalid status (FAIL 400)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 400', () => pm.response.to.have.status(400));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "PATCH",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{adminToken}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "orders",
+      "{{orderId}}",
+      "status"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"status\": \"delivered\"}"
+    }
+   }
+  },
+  {
+   "name": "24 Cancel delivered order (FAIL 400)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 400', () => pm.response.to.have.status(400));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "orders",
+      "{{orderId}}",
+      "cancel"
+     ]
+    }
+   }
+  },
+  {
+   "name": "25 Review product",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 201', () => pm.response.to.have.status(201));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/reviews",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "reviews"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"product_id\": 1, \"rating\": 5, \"comment\": \"Nice\"}"
+    }
+   }
+  },
+  {
+   "name": "26 Review rating 10 (FAIL 422)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 422', () => pm.response.to.have.status(422));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/reviews",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "reviews"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"product_id\": 1, \"rating\": 10}"
+    }
+   }
+  },
+  {
+   "name": "27 Request return",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 201', () => pm.response.to.have.status(201));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/returns",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "returns"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"order_id\": \"{{orderId}}\", \"reason\": \"Damaged item\"}"
+    }
+   }
+  },
+  {
+   "name": "28 Notifications",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/notifications",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "notifications"
+     ]
+    }
+   }
+  },
+  {
+   "name": "29 Analytics as admin",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{adminToken}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/analytics/orders",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "analytics",
+      "orders"
+     ]
+    }
+   }
+  },
+  {
+   "name": "30 Analytics as customer (FAIL 403)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 403', () => pm.response.to.have.status(403));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{token}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/analytics/orders",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "analytics",
+      "orders"
+     ]
+    }
+   }
+  },
+  {
+   "name": "31 Users list (admin)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{adminToken}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/auth/users",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "auth",
+      "users"
+     ]
+    }
+   }
+  },
+  {
+   "name": "32 Audit log (admin)",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "exec": [
+       "pm.test('status 200', () => pm.response.to.have.status(200));"
+      ],
+      "type": "text/javascript"
+     }
+    }
+   ],
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     },
+     {
+      "key": "Authorization",
+      "value": "Bearer {{adminToken}}"
+     }
+    ],
+    "url": {
+     "raw": "{{baseUrl}}/api/auth/audit",
+     "host": [
+      "{{baseUrl}}"
+     ],
+     "path": [
+      "api",
+      "auth",
+      "audit"
+     ]
+    }
+   }
+  }
+ ],
+ "event": [
+  {
+   "listen": "prerequest",
+   "script": {
+    "exec": [
+     "if(!pm.collectionVariables.get('email')) pm.collectionVariables.set('email','u'+Date.now()+'@test.com');"
+    ],
+    "type": "text/javascript"
+   }
+  }
+ ]
+}

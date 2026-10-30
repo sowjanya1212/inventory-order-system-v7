@@ -1,0 +1,48 @@
+x-svc: &svc
+  env_file: .env.example
+  restart: unless-stopped
+services:
+  auth:      {<<: *svc, build: {context: ., args: {SERVICE: auth}}}
+  products:  {<<: *svc, build: {context: ., args: {SERVICE: products}}}
+  inventory: {<<: *svc, build: {context: ., args: {SERVICE: inventory}}}
+  coupons:   {<<: *svc, build: {context: ., args: {SERVICE: coupons}}}
+  returns:
+    <<: *svc
+    build: {context: ., args: {SERVICE: returns}}
+    environment: {ORDERS_URL: "http://orders:8000", INVENTORY_URL: "http://inventory:8000"}
+  analytics:
+    <<: *svc
+    build: {context: ., args: {SERVICE: analytics}}
+    environment: {ORDERS_URL: "http://orders:8000", INVENTORY_URL: "http://inventory:8000", RETURNS_URL: "http://returns:8000"}
+  orders:
+    <<: *svc
+    build: {context: ., args: {SERVICE: orders}}
+    environment: {PRODUCTS_URL: "http://products:8000", INVENTORY_URL: "http://inventory:8000", COUPONS_URL: "http://coupons:8000"}
+  payments:
+    <<: *svc
+    build: {context: ., args: {SERVICE: payments}}
+    environment: {ORDERS_URL: "http://orders:8000"}
+    depends_on: [rabbitmq]
+  notifications:
+    <<: *svc
+    build: {context: ., args: {SERVICE: notifications}}
+    depends_on: [rabbitmq]
+  reviews:
+    <<: *svc
+    build: {context: ., args: {SERVICE: reviews}}
+    environment: {ORDERS_URL: "http://orders:8000"}
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports: ["15672:15672"]
+  cart:
+    <<: *svc
+    build: {context: ., args: {SERVICE: cart}}
+    environment: {PRODUCTS_URL: "http://products:8000", INVENTORY_URL: "http://inventory:8000"}
+  redis:
+    image: redis:7
+  gateway:
+    <<: *svc
+    build: {context: ., args: {SERVICE: gateway}}
+    ports: ["8000:8000"]
+    environment: {AUTH_URL: "http://auth:8000", PRODUCTS_URL: "http://products:8000", INVENTORY_URL: "http://inventory:8000", ORDERS_URL: "http://orders:8000", COUPONS_URL: "http://coupons:8000", RETURNS_URL: "http://returns:8000", ANALYTICS_URL: "http://analytics:8000", PAYMENTS_URL: "http://payments:8000", NOTIFICATIONS_URL: "http://notifications:8000", REVIEWS_URL: "http://reviews:8000", CART_URL: "http://cart:8000"}
+    depends_on: [redis, auth, products, inventory, orders, coupons, returns, analytics, payments, notifications, reviews, cart]

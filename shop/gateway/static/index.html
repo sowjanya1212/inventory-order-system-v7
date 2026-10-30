@@ -1,0 +1,126 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shop</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>body{font-family:sans-serif;max-width:900px;margin:auto;padding:12px}.card{border:1px solid #ccc;border-radius:8px;padding:10px;margin:8px 0}
+button{padding:6px 12px;margin:2px;cursor:pointer}input{padding:6px;margin:2px}.err{color:#b00}.ok{color:#080}nav button{font-weight:bold}</style></head>
+<body><div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect}=React;
+async function api(path,method="GET",body,extra={}){
+  const t=localStorage.getItem("tok");
+  const r=await fetch("/api/"+path,{method,headers:{"Content-Type":"application/json",...(t?{Authorization:"Bearer "+t}:{}),...extra},body:body?JSON.stringify(body):undefined});
+  const d=r.status===204?{}:await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(typeof d.detail==="string"?d.detail:"Invalid input");
+  return d;
+}
+function Login({onLogin}){
+  const [e,setE]=useState(""),[p,setP]=useState(""),[msg,setMsg]=useState(""),[reg,setReg]=useState(false);
+  const go=async()=>{try{
+    if(reg){await api("auth/register","POST",{email:e,password:p});setReg(false);setMsg("Registered! Now log in.");return;}
+    const d=await api("auth/login","POST",{email:e,password:p});localStorage.setItem("tok",d.access_token);onLogin(d.role);
+  }catch(x){setMsg(x.message)}};
+  return <div className="card"><h2>{reg?"Register":"Login"}</h2>
+    <input placeholder="email" value={e} onChange={x=>setE(x.target.value)}/><input type="password" placeholder="password (6+)" value={p} onChange={x=>setP(x.target.value)}/>
+    <button onClick={go}>{reg?"Register":"Login"}</button><button onClick={()=>setReg(!reg)}>{reg?"Have account?":"New user?"}</button><p className="err">{msg}</p></div>;
+}
+function Shop({cart,setCart}){
+  const [items,setItems]=useState(null),[q,setQ]=useState(""),[sort,setSort]=useState("id"),[page,setPage]=useState(1),[total,setTotal]=useState(0);
+  useEffect(()=>{api(`products?q=${q}&sort=${sort}&page=${page}&size=5`).then(d=>{setItems(d.items);setTotal(d.total)})},[q,sort,page]);
+  return <div><input placeholder="Search..." value={q} onChange={e=>{setQ(e.target.value);setPage(1)}}/>
+    <select value={sort} onChange={e=>setSort(e.target.value)}><option value="id">Newest</option><option value="price">Price</option><option value="name">Name</option></select>
+    {items===null?<p>Loading...</p>:items.length===0?<p>No products found.</p>:items.map(p=>
+      <div className="card" key={p.id}>{p.image?<img src={p.image} alt={p.name} style={{width:120,height:90,objectFit:"cover",float:"right",borderRadius:6}} onError={e=>e.target.style.display="none"}/>:null}<b>{p.name}</b> — ₹{p.price}<br/>{p.description} <i>({p.category})</i><br/>
+      <button onClick={()=>api("cart/items","POST",{product_id:p.id,qty:1}).then(()=>alert("Added to cart")).catch(e=>alert(e.message))}>Add to cart</button><button onClick={()=>api("wishlist/items","POST",{product_id:p.id}).then(()=>alert("Saved to wishlist")).catch(e=>alert(e.message))}>♡ Wishlist</button><Reviews pid={p.id}/></div>)}
+    <button disabled={page<=1} onClick={()=>setPage(page-1)}>Prev</button> Page {page} <button disabled={page*5>=total} onClick={()=>setPage(page+1)}>Next</button></div>;
+}
+function Cart({done}){
+  const [c,setC]=useState(null),[msg,setMsg]=useState(""),[key]=useState(()=>crypto.randomUUID()),[coupon,setCoupon]=useState("");
+  const load=()=>api("cart").then(setC).catch(e=>setMsg(e.message));
+  useEffect(()=>{load()},[]);
+  const upd=async(f)=>{try{await f();setMsg("");load()}catch(e){setMsg(e.message)}};
+  const order=async()=>{try{const o=await api("orders","POST",{items:c.items.map(i=>({product_id:i.product_id,qty:i.qty})),coupon},{"Idempotency-Key":key});
+    for(const i of c.items) await api(`cart/items/${i.id}`,"DELETE"); done(o)}catch(x){setMsg(x.message)}};
+  if(!c) return <p>Loading...</p>; if(!c.items.length) return <p>Your cart is empty. <span className="err">{msg}</span></p>;
+  return <div>{c.items.map(i=><div className="card" key={i.id}>{i.name} × <input type="number" min="1" style={{width:50}} defaultValue={i.qty} onBlur={e=>upd(()=>api(`cart/items/${i.id}`,"PATCH",{qty:+e.target.value}))}/> = ₹{i.price*i.qty} {!i.available&&<b className="err">(not enough stock)</b>}
+    <button onClick={()=>upd(()=>api(`cart/items/${i.id}`,"DELETE"))}>Remove</button></div>)}
+    <p>Subtotal ₹{c.total} (+5% tax). Your cart is saved on the server.</p><input placeholder="Coupon (try WELCOME10)" value={coupon} onChange={e=>setCoupon(e.target.value)}/><button onClick={order}>Place order</button><p className="err">{msg}</p></div>;
+}
+function Wish(){
+  const [w,setW]=useState(null),[msg,setMsg]=useState("");
+  const load=()=>api("wishlist").then(setW).catch(e=>setMsg(e.message));
+  useEffect(()=>{load()},[]);
+  if(!w) return <p>Loading...</p>; if(!w.length) return <p>Your wishlist is empty.</p>;
+  return <div><p className="ok">{msg}</p>{w.map(i=><div className="card" key={i.id}>{i.name} — ₹{i.price}
+    <button onClick={()=>api("cart/items","POST",{product_id:i.product_id,qty:1}).then(()=>setMsg("Added to cart")).catch(e=>setMsg(e.message))}>Add to cart</button>
+    <button onClick={()=>api(`wishlist/items/${i.id}`,"DELETE").then(load)}>Remove</button></div>)}</div>;
+}
+function Orders({role}){
+  const [os,setOs]=useState(null),[msg,setMsg]=useState("");
+  const load=()=>api(role==="admin"?"orders":"orders/my-orders").then(setOs).catch(e=>setMsg(e.message));
+  useEffect(()=>{load()},[]);
+  const act=async(f)=>{try{await f();setMsg("Done");load()}catch(e){setMsg(e.message)}};
+  if(!os) return <p>Loading...</p>; if(!os.length) return <p>No orders yet.</p>;
+  return <div><p className="ok">{msg}</p>{os.map(o=><div className="card" key={o.id}><b>{o.number}</b> — {o.status} — ₹{o.total}<br/>
+    {o.items.map(i=>`${i.name}×${i.qty}`).join(", ")}<br/>
+    {o.status==="Pending"&&role!=="admin"&&<><button onClick={()=>act(()=>api("payments","POST",{order_id:o.id,simulate:"success"},{"Idempotency-Key":crypto.randomUUID()}))}>Pay now (simulated)</button><button onClick={()=>act(()=>api("payments","POST",{order_id:o.id,simulate:"failure"}))}>Simulate failed payment</button></>}
+    {["Pending","Confirmed","Processing"].includes(o.status)&&<button onClick={()=>window.confirm("Cancel this order?")&&act(()=>api(`orders/${o.id}/cancel`,"POST"))}>Cancel</button>}
+    {o.status==="Delivered"&&role!=="admin"&&<button onClick={()=>{const r=window.prompt("Reason for return?");r&&act(()=>api("returns","POST",{order_id:o.id,reason:r}))}}>Request return</button>}
+    {role==="admin"&&["Processing","Shipped","Delivered"].map(s=><button key={s} onClick={()=>act(()=>api(`orders/${o.id}/status`,"PATCH",{status:s}))}>Mark {s}</button>)}</div>)}</div>;
+}
+function Admin(){
+  const [f,setF]=useState({name:"",category:"",price:"",description:"",brand:"",image:""}),[sid,setSid]=useState(""),[qty,setQty]=useState(""),[msg,setMsg]=useState("");
+  const add=async()=>{try{const p=await api("products","POST",{...f,price:+f.price});setMsg("Created product #"+p.id+" (set its stock below)")}catch(e){setMsg(e.message)}};
+  const stock=async()=>{try{const r=await api(`inventory/${sid}/stock`,"PATCH",{delta:+qty,reason:"manual adjustment"});setMsg(`Stock of #${sid} is now ${r.qty}`)}catch(e){setMsg(e.message)}};
+  return <div className="card"><h3>Add product</h3>{["name","category","price","description","brand","image"].map(k=><input key={k} placeholder={k} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/>)}<button onClick={add}>Create</button>
+    <h3>Adjust stock (use negative to deduct)</h3><input placeholder="product id" value={sid} onChange={e=>setSid(e.target.value)}/><input placeholder="+/- qty" value={qty} onChange={e=>setQty(e.target.value)}/><button onClick={stock}>Apply</button><p className="ok">{msg}</p></div>;
+}
+function Returns({role}){
+  const [rs,setRs]=useState(null),[msg,setMsg]=useState("");
+  const load=()=>api(role==="admin"?"returns":"returns/my-returns").then(setRs).catch(e=>setMsg(e.message));
+  useEffect(()=>{load()},[]);
+  const set=async(id,s)=>{try{await api(`returns/${id}/status`,"PATCH",{status:s});setMsg("Updated");load()}catch(e){setMsg(e.message)}};
+  if(!rs) return <p>Loading...</p>; if(!rs.length) return <p>No returns.</p>;
+  return <div><p className="err">{msg}</p>{rs.map(r=><div className="card" key={r.id}>Return #{r.id} for order #{r.order_id} — <b>{r.status}</b><br/>Reason: {r.reason}<br/>History: {r.history}<br/>
+    {role==="admin"&&["Approved","Rejected","Received","Refunded"].map(s=><button key={s} onClick={()=>set(r.id,s)}>{s}</button>)}</div>)}</div>;
+}
+function Stats(){
+  const [d,setD]=useState(null),[c,setC]=useState({code:"",value:"",min_purchase:"0"}),[msg,setMsg]=useState("");
+  const load=async()=>{try{setD({o:await api("analytics/orders"),t:await api("analytics/top-products"),i:await api("analytics/inventory")})}catch(e){setMsg(e.message)}};
+  const mk=async()=>{try{await api("coupons","POST",{code:c.code,kind:"percent",value:+c.value,min_purchase:+c.min_purchase,expires:"2030-12-31",max_uses:100});setMsg("Coupon created")}catch(e){setMsg(e.message)}};
+  const dl=async()=>{const r=await fetch("/api/analytics/sales?format=csv",{headers:{Authorization:"Bearer "+localStorage.getItem("tok")}});const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download="sales.csv";a.click()};
+  return <div className="card"><h3>Analytics</h3><button onClick={load}>Load</button><button onClick={dl}>Download sales CSV</button>
+    {d&&<pre>{JSON.stringify(d,null,1)}</pre>}
+    <h3>New coupon (% off)</h3><input placeholder="CODE" value={c.code} onChange={e=>setC({...c,code:e.target.value})}/><input placeholder="percent" value={c.value} onChange={e=>setC({...c,value:e.target.value})}/><input placeholder="min purchase" value={c.min_purchase} onChange={e=>setC({...c,min_purchase:e.target.value})}/><button onClick={mk}>Create</button><p className="ok">{msg}</p></div>;
+}
+function Reviews({pid}){
+  const [d,setD]=useState(null),[open,setOpen]=useState(false),[rating,setRating]=useState(5),[comment,setComment]=useState(""),[msg,setMsg]=useState("");
+  const load=()=>api(`products/${pid}/reviews`).then(setD).catch(()=>{});
+  useEffect(()=>{load()},[]);
+  const send=async()=>{try{await api("reviews","POST",{product_id:pid,rating:+rating,comment});setMsg("Review saved");setComment("");load()}catch(e){setMsg(e.message)}};
+  return <div><small>⭐ {d?d.average:"-"} ({d?d.count:0} reviews) <a href="#" onClick={e=>{e.preventDefault();setOpen(!open)}}>{open?"hide":"show / write review"}</a></small>
+    {open&&<div>{d&&d.reviews.map(r=><div key={r.id}>⭐{r.rating} {r.comment}</div>)}
+    <select value={rating} onChange={e=>setRating(e.target.value)}>{[5,4,3,2,1].map(n=><option key={n}>{n}</option>)}</select>
+    <input placeholder="Your review" value={comment} onChange={e=>setComment(e.target.value)}/><button onClick={send}>Submit</button><span className="err"> {msg}</span></div>}</div>;
+}
+function Notes(){
+  const [ns,setNs]=useState(null);
+  const load=()=>api("notifications").then(setNs).catch(()=>setNs([]));
+  useEffect(()=>{load()},[]);
+  if(!ns) return <p>Loading...</p>; if(!ns.length) return <p>No notifications yet.</p>;
+  return <div>{ns.map(n=><div className="card" key={n.id} style={{opacity:n.is_read?0.6:1}}><b>{n.title}</b><br/>{n.body}<br/><small>{n.created}</small>
+    {!n.is_read&&<button onClick={()=>api(`notifications/${n.id}/read`,"PATCH").then(load)}>Mark read</button>}</div>)}</div>;
+}
+function App(){
+  const [role,setRole]=useState(null),[tab,setTab]=useState("shop"),[cart,setCart]=useState({}),[note,setNote]=useState("");
+  useEffect(()=>{if(localStorage.getItem("tok"))api("auth/me").then(u=>setRole(u.role)).catch(()=>localStorage.removeItem("tok"))},[]);
+  if(!role) return <div><h1>🛒 Shop</h1><Login onLogin={setRole}/></div>;
+  return <div><h1>🛒 Shop</h1><nav><button onClick={()=>setTab("shop")}>Products</button><button onClick={()=>setTab("cart")}>Cart</button>
+    <button onClick={()=>setTab("wish")}>Wishlist</button><button onClick={()=>setTab("orders")}>Orders</button><button onClick={()=>setTab("returns")}>Returns</button><button onClick={()=>setTab("notes")}>Notifications</button>{role==="admin"&&<button onClick={()=>setTab("admin")}>Admin</button>}
+    <button onClick={()=>{localStorage.removeItem("tok");setRole(null)}}>Logout ({role})</button></nav>
+    {note&&<p className="ok">{note}</p>}
+    {tab==="shop"&&<Shop cart={cart} setCart={setCart}/>}{tab==="cart"&&<Cart cart={cart} setCart={setCart} done={o=>{setNote("Order "+o.number+" confirmed!");setTab("orders")}}/>}
+    {tab==="orders"&&<Orders role={role}/>}{tab==="returns"&&<Returns role={role}/>}{tab==="notes"&&<Notes/>}{tab==="wish"&&<Wish/>}{tab==="admin"&&<div><Admin/><Stats/></div>}</div>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script></body></html>
